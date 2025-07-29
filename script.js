@@ -25,28 +25,23 @@ document.addEventListener("DOMContentLoaded", () => {
         carregarFotos();
     };
 
-    // ===== CAPTURA DE FOTO ===== //
-    cameraInput.addEventListener("change", function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        // Lê metadados EXIF (se disponível)
-        lerEXIF(file).then(metadata => {
-            if (metadata.Model) {
-                equipamentoInput.value = metadata.Model;
-            }
-            if (metadata.FNumber) {
-                configsInput.value = `f/${metadata.FNumber}, ISO ${metadata.ISO || "N/A"}`;
+    // ===== Função para ler metadados EXIF ===== //
+    function lerEXIF(file) {
+        return new Promise((resolve) => {
+            try {
+                EXIF.getData(file, function() {
+                    resolve({
+                        Model: EXIF.getTag(this, "Model"),
+                        FNumber: EXIF.getTag(this, "FNumber"),
+                        ISO: EXIF.getTag(this, "ISOSpeedRatings")
+                    });
+                });
+            } catch (e) {
+                console.warn("Erro ao ler EXIF:", e);
+                resolve({});
             }
         });
-
-        // Exibe preview
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            photoPreview.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
+    }
 
     // ===== GEOLOCALIZAÇÃO ===== //
     function obterLocalizacao() {
@@ -65,6 +60,29 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // ===== CAPTURA DE FOTO ===== //
+    cameraInput.addEventListener("change", async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Mostrar preview da imagem
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            photoPreview.src = event.target.result;
+            photoPreview.classList.add("ativo");
+        };
+        reader.readAsDataURL(file);
+
+        // Ler metadados EXIF e preencher campos
+        const metadata = await lerEXIF(file);
+        if (metadata.Model) {
+            equipamentoInput.value = metadata.Model;
+        }
+        if (metadata.FNumber) {
+            configsInput.value = `f/${metadata.FNumber}, ISO ${metadata.ISO || "N/A"}`;
+        }
+    });
+
     // ===== SALVAR FOTO + ANOTAÇÕES ===== //
     salvarBtn.addEventListener("click", async () => {
         if (!photoPreview.src) {
@@ -74,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const localizacao = await obterLocalizacao().catch(() => null);
-            
+
             const fotoData = {
                 imagem: photoPreview.src,
                 equipamento: equipamentoInput.value,
@@ -85,7 +103,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 categoria: document.getElementById("categoria").value
             };
 
-            // Salva no IndexedDB
+            console.log("Salvando dados:", fotoData); // Log para depuração
+
             const transaction = db.transaction("fotos", "readwrite");
             const store = transaction.objectStore("fotos");
             store.add(fotoData);
@@ -93,6 +112,8 @@ document.addEventListener("DOMContentLoaded", () => {
             transaction.oncomplete = () => {
                 alert("Foto salva com sucesso!");
                 limparFormulario();
+                filtroData.value = "";
+                filtroCategoria.value = "";
                 carregarFotos();
             };
         } catch (error) {
@@ -108,16 +129,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         request.onsuccess = (event) => {
             const fotos = event.target.result;
-            
+
             // Aplica filtros
             let fotosFiltradas = fotos;
             if (filtros.data) {
-                fotosFiltradas = fotosFiltradas.filter(foto => 
+                fotosFiltradas = fotosFiltradas.filter(foto =>
                     new Date(foto.data).toDateString() === new Date(filtros.data).toDateString()
                 );
             }
             if (filtros.categoria) {
-                fotosFiltradas = fotosFiltradas.filter(foto => 
+                fotosFiltradas = fotosFiltradas.filter(foto =>
                     foto.categoria === filtros.categoria
                 );
             }
@@ -147,6 +168,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ===== FUNÇÕES AUXILIARES ===== //
     function limparFormulario() {
+        photoPreview.classList.remove("ativo");
         photoPreview.src = "";
         equipamentoInput.value = "";
         configsInput.value = "";
@@ -161,18 +183,6 @@ document.addEventListener("DOMContentLoaded", () => {
         transaction.oncomplete = () => carregarFotos();
     }
 
-    function lerEXIF(file) {
-        return new Promise((resolve) => {
-            EXIF.getData(file, function() {
-                resolve({
-                    Model: EXIF.getTag(this, "Model"),
-                    FNumber: EXIF.getTag(this, "FNumber"),
-                    ISO: EXIF.getTag(this, "ISOSpeedRatings")
-                });
-            });
-        });
-    }
-
     // ===== FILTROS ===== //
     filtroData.addEventListener("change", () => {
         carregarFotos({ data: filtroData.value });
@@ -182,7 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
         carregarFotos({ categoria: filtroCategoria.value });
     });
 
-    // ===== EXPORTAR/IMPORTAR ===== //
+    // ===== EXPORTAR JSON ===== //
     exportarBtn.addEventListener("click", () => {
         const transaction = db.transaction("fotos", "readonly");
         const store = transaction.objectStore("fotos");
@@ -197,6 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     });
 
+    // ===== IMPORTAR JSON ===== //
     document.getElementById("importar-arquivo").addEventListener("change", (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -207,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const fotos = JSON.parse(event.target.result);
                 const transaction = db.transaction("fotos", "readwrite");
                 const store = transaction.objectStore("fotos");
-                
+
                 fotos.forEach(foto => {
                     store.add(foto);
                 });
