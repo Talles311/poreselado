@@ -1,87 +1,225 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // Elementos DOM
+    // ===== ELEMENTOS DO DOM ===== //
     const cameraInput = document.getElementById("camera-input");
-    const btnCapturar = document.getElementById("btn-capturar");
     const photoPreview = document.getElementById("photo-preview");
-    const btnSalvar = document.getElementById("btn-salvar");
+    const equipamentoInput = document.getElementById("equipamento");
+    const configsInput = document.getElementById("configs");
+    const observacoesInput = document.getElementById("observacoes");
+    const salvarBtn = document.getElementById("salvar-anotacao");
     const listaFotos = document.getElementById("lista-fotos");
-    
-    // Banco de dados
-    let db;
-    const request = indexedDB.open("DiarioFotosDB", 1);
+    const filtroData = document.getElementById("filtro-data");
+    const filtroCategoria = document.getElementById("filtro-categoria");
+    const exportarBtn = document.getElementById("exportar-json");
 
-    request.onupgradeneeded = (e) => {
-        db = e.target.result;
+    // ===== BANCO DE DADOS (IndexedDB) ===== //
+    let db;
+    const request = indexedDB.open("FotosDiario", 1);
+
+    request.onupgradeneeded = (event) => {
+        db = event.target.result;
         db.createObjectStore("fotos", { keyPath: "id", autoIncrement: true });
     };
 
-    request.onsuccess = (e) => {
-        db = e.target.result;
-        carregarGaleria();
+    request.onsuccess = (event) => {
+        db = event.target.result;
+        carregarFotos();
     };
 
-    // Eventos
-    btnCapturar.addEventListener("click", () => cameraInput.click());
-    
-    cameraInput.addEventListener("change", (e) => {
+    // ===== CAPTURA DE FOTO ===== //
+    cameraInput.addEventListener("change", function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Lê metadados EXIF (se disponível)
+        lerEXIF(file).then(metadata => {
+            if (metadata.Model) {
+                equipamentoInput.value = metadata.Model;
+            }
+            if (metadata.FNumber) {
+                configsInput.value = `f/${metadata.FNumber}, ISO ${metadata.ISO || "N/A"}`;
+            }
+        });
+
+        // Exibe preview
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            photoPreview.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // ===== GEOLOCALIZAÇÃO ===== //
+    function obterLocalizacao() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject("Geolocalização não suportada");
+            } else {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => resolve({
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude
+                    }),
+                    (err) => reject(err)
+                );
+            }
+        });
+    }
+
+    // ===== SALVAR FOTO + ANOTAÇÕES ===== //
+    salvarBtn.addEventListener("click", async () => {
+        if (!photoPreview.src) {
+            alert("Selecione uma foto primeiro!");
+            return;
+        }
+
+        try {
+            const localizacao = await obterLocalizacao().catch(() => null);
+            
+            const fotoData = {
+                imagem: photoPreview.src,
+                equipamento: equipamentoInput.value,
+                configs: configsInput.value,
+                observacoes: observacoesInput.value,
+                localizacao,
+                data: new Date().toISOString(),
+                categoria: document.getElementById("categoria").value
+            };
+
+            // Salva no IndexedDB
+            const transaction = db.transaction("fotos", "readwrite");
+            const store = transaction.objectStore("fotos");
+            store.add(fotoData);
+
+            transaction.oncomplete = () => {
+                alert("Foto salva com sucesso!");
+                limparFormulario();
+                carregarFotos();
+            };
+        } catch (error) {
+            console.error("Erro ao salvar:", error);
+        }
+    });
+
+    // ===== CARREGAR FOTOS SALVAS ===== //
+    function carregarFotos(filtros = {}) {
+        const transaction = db.transaction("fotos", "readonly");
+        const store = transaction.objectStore("fotos");
+        const request = store.getAll();
+
+        request.onsuccess = (event) => {
+            const fotos = event.target.result;
+            
+            // Aplica filtros
+            let fotosFiltradas = fotos;
+            if (filtros.data) {
+                fotosFiltradas = fotosFiltradas.filter(foto => 
+                    new Date(foto.data).toDateString() === new Date(filtros.data).toDateString()
+                );
+            }
+            if (filtros.categoria) {
+                fotosFiltradas = fotosFiltradas.filter(foto => 
+                    foto.categoria === filtros.categoria
+                );
+            }
+
+            // Renderiza na tela
+            listaFotos.innerHTML = fotosFiltradas.map(foto => `
+                <div class="foto-card" data-id="${foto.id}">
+                    <img src="${foto.imagem}" alt="Foto">
+                    <div class="metadados">
+                        <p><strong>${foto.equipamento || "Sem equipamento"}</strong></p>
+                        <p>${foto.configs || ""}</p>
+                        <p>${new Date(foto.data).toLocaleString()}</p>
+                        <button class="btn-remover">Remover</button>
+                    </div>
+                </div>
+            `).join("");
+
+            // Adiciona eventos de remoção
+            document.querySelectorAll(".btn-remover").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    const id = Number(e.target.closest(".foto-card").dataset.id);
+                    removerFoto(id);
+                });
+            });
+        };
+    }
+
+    // ===== FUNÇÕES AUXILIARES ===== //
+    function limparFormulario() {
+        photoPreview.src = "";
+        equipamentoInput.value = "";
+        configsInput.value = "";
+        observacoesInput.value = "";
+        cameraInput.value = "";
+    }
+
+    function removerFoto(id) {
+        const transaction = db.transaction("fotos", "readwrite");
+        const store = transaction.objectStore("fotos");
+        store.delete(id);
+        transaction.oncomplete = () => carregarFotos();
+    }
+
+    function lerEXIF(file) {
+        return new Promise((resolve) => {
+            EXIF.getData(file, function() {
+                resolve({
+                    Model: EXIF.getTag(this, "Model"),
+                    FNumber: EXIF.getTag(this, "FNumber"),
+                    ISO: EXIF.getTag(this, "ISOSpeedRatings")
+                });
+            });
+        });
+    }
+
+    // ===== FILTROS ===== //
+    filtroData.addEventListener("change", () => {
+        carregarFotos({ data: filtroData.value });
+    });
+
+    filtroCategoria.addEventListener("change", () => {
+        carregarFotos({ categoria: filtroCategoria.value });
+    });
+
+    // ===== EXPORTAR/IMPORTAR ===== //
+    exportarBtn.addEventListener("click", () => {
+        const transaction = db.transaction("fotos", "readonly");
+        const store = transaction.objectStore("fotos");
+        store.getAll().onsuccess = (event) => {
+            const fotos = event.target.result;
+            const blob = new Blob([JSON.stringify(fotos)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `fotos-diario_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+        };
+    });
+
+    document.getElementById("importar-arquivo").addEventListener("change", (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
         reader.onload = (event) => {
-            photoPreview.src = event.target.result;
-            photoPreview.classList.add("ativo");
+            try {
+                const fotos = JSON.parse(event.target.result);
+                const transaction = db.transaction("fotos", "readwrite");
+                const store = transaction.objectStore("fotos");
+                
+                fotos.forEach(foto => {
+                    store.add(foto);
+                });
+
+                transaction.oncomplete = () => {
+                    alert(`${fotos.length} fotos importadas!`);
+                    carregarFotos();
+                };
+            } catch (error) {
+                alert("Arquivo inválido!");
+            }
         };
-        reader.readAsDataURL(file);
+        reader.readAsText(file);
     });
-
-    btnSalvar.addEventListener("click", () => {
-        if (!photoPreview.src) {
-            alert("Capture uma foto primeiro!");
-            return;
-        }
-
-        const fotoData = {
-            imagem: photoPreview.src,
-            equipamento: document.getElementById("equipamento").value || "Não informado",
-            observacoes: document.getElementById("observacoes").value || "",
-            data: new Date().toLocaleString()
-        };
-
-        const transaction = db.transaction("fotos", "readwrite");
-        const store = transaction.objectStore("fotos");
-        store.add(fotoData);
-
-        transaction.oncomplete = () => {
-            alert("Foto salva na galeria!");
-            photoPreview.classList.remove("ativo");
-            photoPreview.src = "";
-            document.getElementById("equipamento").value = "";
-            document.getElementById("observacoes").value = "";
-            carregarGaleria();
-        };
-    });
-
-    // Carrega fotos salvas
-    function carregarGaleria() {
-        const transaction = db.transaction("fotos", "readonly");
-        const store = transaction.objectStore("fotos");
-        const request = store.getAll();
-
-        request.onsuccess = (e) => {
-            listaFotos.innerHTML = e.target.result.map(foto => `
-                <div class="foto-card">
-                    <img src="${foto.imagem}" alt="Foto">
-                    <div class="foto-info">
-                        <p><strong>${foto.equipamento}</strong></p>
-                        <p>${foto.observacoes || "Sem observações"}</p>
-                        <small>${foto.data}</small>
-                    </div>
-                </div>
-            `).join("");
-        };
-    }
-
-    // Ano atual no footer
-    document.getElementById("ano-atual").textContent = new Date().getFullYear();
 });

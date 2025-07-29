@@ -1,81 +1,117 @@
-/* ===== BASE ===== */
+/* ===== RESET & BASE ===== */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+:root {
+    --cor-primaria: #0078D4;
+    --cor-secundaria: #28a745;
+    --cor-texto: #333;
+    --cor-fundo: #f9f9f9;
+    --cor-borda: #ddd;
+    --sombra: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
 body {
-    font-family: 'Segoe UI', sans-serif;
-    background-color: #f5f5f5;
-    color: #333;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto);
     line-height: 1.6;
     padding: 20px;
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
+/* ===== HEADER ===== */
 header {
     text-align: center;
     margin-bottom: 30px;
     padding: 20px 0;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--cor-borda);
 }
 
-h1, h2 {
-    color: #2c3e50;
+header h1 {
+    font-size: 2.5rem;
+    color: var(--cor-primaria);
+    letter-spacing: 1px;
 }
 
-/* ===== BOTÕES ===== */
-.botao-principal {
-    background: #3498db;
+/* ===== SEÇÃO CAPTURA ===== */
+#captura-foto {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: var(--sombra);
+    margin-bottom: 30px;
+}
+
+#captura-foto h2 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    color: var(--cor-primaria);
+}
+
+/* Estilo do botão de câmera */
+.botao-camera {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--cor-primaria);
     color: white;
-    border: none;
-    padding: 12px 20px;
+    padding: 12px 25px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 1rem;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    margin-bottom: 15px;
+    border: none;
     width: 100%;
-    margin: 10px 0;
-    transition: background 0.3s;
 }
 
-.botao-principal:hover {
-    background: #2980b9;
+.botao-camera:hover {
+    background: #0060b3;
+    transform: translateY(-2px);
 }
 
-/* ===== PREVIEW DA FOTO ===== */
+/* Preview da foto */
 .preview-foto {
     max-width: 100%;
     border-radius: 8px;
     margin: 15px 0;
     display: none;
-    border: 2px dashed #ccc;
+    border: 2px dashed var(--cor-borda);
 }
 
 .preview-foto.ativo {
     display: block;
 }
 
-/* ===== FORMULÁRIO ===== */
+/* ===== FORMULÁRIO DE METADADOS ===== */
 .metadados {
     display: grid;
+    grid-template-columns: 1fr;
     gap: 15px;
     margin: 20px 0;
 }
 
 .metadados label {
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--cor-primaria);
+    margin-bottom: -10px;
 }
 
 .metadados input,
-.metadados textarea {
+.metadados textarea,
+.metadados select {
     width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
+    padding: 12px;
+    border: 1px solid var(--cor-borda);
     border-radius: 6px;
     font-size: 1rem;
+    transition: border 0.3s;
 }
 
 .metadados textarea {
@@ -83,43 +119,220 @@ h1, h2 {
     resize: vertical;
 }
 
+.metadados input:focus,
+.metadados textarea:focus,
+.metadados select:focus {
+    outline: none;
+    border-color: var(--cor-primaria);
+    box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+}
+
+/* ===== BOTÕES ===== */
+.botao-principal {
+    background: var(--cor-primaria);
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.botao-principal:hover {
+    background: #0060b3;
+    transform: translateY(-2px);
+}
+
+.botao-secundario {
+    background: white;
+    color: var(--cor-primaria);
+    padding: 10px 20px;
+    border: 1px solid var(--cor-primaria);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.botao-secundario:hover {
+    background: rgba(0, 120, 212, 0.1);
+}
+
+/* ===== SEÇÃO FILTROS ===== */
+#filtros {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: var(--sombra);
+    margin-bottom: 20px;
+}
+
+#filtros h2 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: var(--cor-primaria);
+}
+
+.filtros-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.filtros-container input,
+.filtros-container select {
+    padding: 10px;
+    border: 1px solid var(--cor-borda);
+    border-radius: 6px;
+    width: 100%;
+}
+
 /* ===== GALERIA ===== */
+#galeria {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: var(--sombra);
+    margin-bottom: 30px;
+}
+
+#galeria h2 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    color: var(--cor-primaria);
+}
+
 .grid-fotos {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 25px;
     margin-top: 20px;
 }
 
 .foto-card {
     background: white;
-    border-radius: 8px;
+    border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: var(--sombra);
+    transition: transform 0.3s;
+    border: 1px solid var(--cor-borda);
+}
+
+.foto-card:hover {
+    transform: translateY(-5px);
 }
 
 .foto-card img {
     width: 100%;
-    height: 180px;
+    height: 200px;
     object-fit: cover;
+    border-bottom: 1px solid var(--cor-borda);
 }
 
-.foto-info {
+.foto-card .metadados {
     padding: 15px;
 }
 
-.foto-info p {
-    margin: 5px 0;
+.foto-card .metadados p {
+    margin-bottom: 8px;
     font-size: 0.9rem;
 }
 
-/* ===== RESPONSIVO ===== */
-@media (max-width: 600px) {
+.foto-card .metadados small {
+    color: #666;
+    font-size: 0.8rem;
+}
+
+.btn-remover {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin-top: 10px;
+    transition: background 0.3s;
+}
+
+.btn-remover:hover {
+    background: #bb2d3b;
+}
+
+/* ===== BOTÕES EXPORTAÇÃO ===== */
+.botoes-exportacao {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+/* ===== FOOTER ===== */
+footer {
+    text-align: center;
+    margin-top: 50px;
+    padding: 20px 0;
+    border-top: 1px solid var(--cor-borda);
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* ===== RESPONSIVIDADE ===== */
+@media (max-width: 768px) {
     body {
-        padding: 10px;
+        padding: 15px;
+    }
+    
+    .filtros-container {
+        grid-template-columns: 1fr;
     }
     
     .grid-fotos {
         grid-template-columns: 1fr;
     }
+    
+    .botoes-exportacao {
+        flex-direction: column;
+    }
+    
+    .botao-secundario {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    header h1 {
+        font-size: 2rem;
+    }
+    
+    #captura-foto h2,
+    #galeria h2 {
+        font-size: 1.5rem;
+    }
+    
+    .metadados {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== ANIMAÇÕES ===== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.foto-card {
+    animation: fadeIn 0.5s ease-out forwards;
 }

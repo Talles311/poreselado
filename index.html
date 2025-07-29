@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diário Fotográfico</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style/style.css">
+    <!-- Adicione isso para ícones (opcional) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <header>
@@ -12,46 +14,84 @@
     </header>
 
     <main>
-        <!-- Seção de Captura -->
-        <section id="captura">
-            <h2>Nova Foto</h2>
+        <!-- Seção de Captura (NOVO) -->
+        <section id="captura-foto">
+            <h2>Nova Entrada</h2>
             
-            <!-- Input de câmera oculto -->
-            <input type="file" id="camera-input" accept="image/jpeg" capture="environment" style="display:none;">
-            
-            <!-- Botão personalizado -->
-            <button id="btn-capturar" class="botao-principal">
-                📷 Capturar Foto
-            </button>
+            <!-- Input de câmera oculto + botão personalizado -->
+            <label for="camera-input" class="botao-camera">
+                <i class="fas fa-camera"></i> Capturar Foto
+            </label>
+            <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
             
             <!-- Preview da foto -->
             <img id="photo-preview" class="preview-foto">
             
-            <!-- Formulário de metadados -->
+            <!-- Campos de metadados -->
             <div class="metadados">
                 <label for="equipamento">Equipamento:</label>
-                <input type="text" id="equipamento" placeholder="Ex: iPhone 15">
+                <input type="text" id="equipamento" placeholder="Ex: Canon EOS R6">
+                
+                <label for="configs">Configurações:</label>
+                <input type="text" id="configs" placeholder="Ex: f/2.8, 1/500s, ISO 400">
                 
                 <label for="observacoes">Observações:</label>
-                <textarea id="observacoes" placeholder="Contexto, configurações..."></textarea>
+                <textarea id="observacoes" placeholder="Contexto, ideias..."></textarea>
                 
-                <button id="btn-salvar" class="botao-principal">
-                    💾 Salvar Foto
-                </button>
+                <label for="categoria">Categoria:</label>
+                <select id="categoria">
+                    <option value="Paisagem">Paisagem</option>
+                    <option value="Retrato">Retrato</option>
+                    <option value="Urbana">Urbana</option>
+                    <option value="Experimental">Experimental</option>
+                </select>
+            </div>
+            
+            <button id="salvar-anotacao" class="botao-principal">
+                <i class="fas fa-save"></i> Salvar Entrada
+            </button>
+        </section>
+
+        <!-- Seção de Filtros (NOVO) -->
+        <section id="filtros">
+            <h2>Filtrar</h2>
+            <div class="filtros-container">
+                <input type="date" id="filtro-data">
+                <select id="filtro-categoria">
+                    <option value="">Todas Categorias</option>
+                    <option value="Paisagem">Paisagem</option>
+                    <option value="Retrato">Retrato</option>
+                    <option value="Urbana">Urbana</option>
+                </select>
             </div>
         </section>
 
-        <!-- Galeria -->
+        <!-- Seção de Galeria (NOVO) -->
         <section id="galeria">
-            <h2>Suas Fotos</h2>
-            <div id="lista-fotos" class="grid-fotos"></div>
+            <h2>Galeria</h2>
+            <div id="lista-fotos" class="grid-fotos">
+                <!-- As fotos serão carregadas aqui via JavaScript -->
+            </div>
         </section>
+
+        <!-- Seção de Exportação (opcional) -->
+        <div class="botoes-exportacao">
+            <button id="exportar-json" class="botao-secundario">
+                <i class="fas fa-file-export"></i> Exportar JSON
+            </button>
+            <label for="importar-arquivo" class="botao-secundario">
+                <i class="fas fa-file-import"></i> Importar
+            </label>
+            <input type="file" id="importar-arquivo" accept=".json" style="display: none;">
+        </div>
     </main>
 
     <footer>
         <p>&copy; <span id="ano-atual"></span> - Diário Fotográfico</p>
     </footer>
 
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
     <script src="script.js"></script>
 </body>
 </html>
